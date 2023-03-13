@@ -124,6 +124,24 @@ export function getBadge(): Promise<number>;
 export function requestPermission(options: {
     forceShow: boolean;
 }): Promise<void>;
+
+export function findChannel(options: {
+    channelId: string;
+}): Promise<void>;
+
+export function listChannels(): Promise<void>;
+
+export function createChannel(options: {
+    id: string,
+    name: string,
+    description: string,
+    importance: number,
+    light: number
+}): Promise<void>;
+
+export function deleteChannel(options: {
+    channelId: string;
+}): Promise<void>;
 /**
  *
  * In general (for both platforms) you can only rely on custom data fields.
