@@ -178,6 +178,84 @@ public class FirebaseMessagingPlugin extends ReflectiveCordovaPlugin {
         }
     }
 
+    @CordovaMethod
+    private void createChannel(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            JSONObject options = args.getJSONObject(0);
+            String channelId = options.getString("id");
+            String channelName = options.getString("name");
+            int importance = options.getInt("importance");
+            NotificationChannel channel = new NotificationChannel(channelId, channelName, importance);
+            channel.setDescription(options.optString("description", ""));
+            channel.setShowBadge(options.optBoolean("badge", true));
+            channel.enableLights(options.optBoolean("light", false));
+            channel.setLightColor(options.optInt("lightColor", 0));
+
+            String soundName = options.optString("sound", "default");
+            if (!"default".equals(soundName)) {
+                String packageName = cordova.getActivity().getPackageName();
+                Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + packageName + "/raw/" + soundName);
+                channel.setSound(soundUri, new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                        .build());
+            }
+
+            JSONArray vibrationPattern = options.optJSONArray("vibration");
+            if (vibrationPattern != null) {
+                int patternLength = vibrationPattern.length();
+                long[] patternArray = new long[patternLength];
+                for (int i = 0; i < patternLength; i++) {
+                    patternArray[i] = vibrationPattern.getLong(i);
+                }
+                channel.setVibrationPattern(patternArray);
+                channel.enableVibration(true);
+            } else {
+                channel.enableVibration(options.optBoolean("vibration", true));
+            }
+            notificationManager.createNotificationChannel(channel);
+        }
+        callbackContext.success();
+    }
+
+    @CordovaMethod
+    private void findChannel(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
+        JSONObject result = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelId = args.getString(0);
+            NotificationChannel channel = notificationManager.getNotificationChannel(channelId);
+            if (channel != null) {
+                result = toJSON(channel);
+            }
+        }
+        if (result != null) {
+            callbackContext.success(result);
+        } else {
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, (String)null));
+        }
+    }
+
+    @CordovaMethod
+    private void listChannels(CallbackContext callbackContext) throws JSONException {
+        JSONArray result = new JSONArray();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            List<NotificationChannel> channels = notificationManager.getNotificationChannels();
+            for (NotificationChannel channel : channels) {
+                result.put(toJSON(channel));
+            }
+        }
+        callbackContext.success(result);
+    }
+
+    @CordovaMethod
+    private void deleteChannel(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelId = args.getString(0);
+            notificationManager.deleteNotificationChannel(channelId);
+        }
+        callbackContext.success();
+    }
+
     @Override
     public void onPause(boolean multitasking) {
         this.isBackground = true;
