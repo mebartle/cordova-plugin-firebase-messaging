@@ -159,13 +159,15 @@ public class FirebaseMessagingPlugin extends ReflectiveCordovaPlugin {
         if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
             callbackContext.success();
         } else {
-            if (Build.VERSION.SDK_INT >= 33) {
+            if (Build.VERSION.SDK_INT >= 33 && cordova) {
                 if (cordova.hasPermission(Manifest.permission.POST_NOTIFICATIONS))
                     return;
                 requestPermissionCallback = callbackContext;
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             } else {
                 callbackContext.error("Notifications permission is not granted");
+                if(!cordova) Log.e(TAG, "cordova unavailable: ", cordova);
+                if(context) Log.e(TAG, "context: ", context);
             }
         }
     }
